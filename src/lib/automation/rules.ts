@@ -13,6 +13,11 @@
 
 import { formatMinorUnits } from "@/lib/quotes/money";
 import { FOLLOW_UP_TYPE_LABELS, isFollowUpType } from "@/lib/leads/types";
+import {
+  followUpDay,
+  isFollowUpOverdue,
+  isFollowUpPending,
+} from "@/lib/leads/follow-up-time";
 import { addDays, formatPeriodDate, wibDayEndIso } from "@/lib/analytics/period";
 import { isActiveLead } from "@/lib/analytics/metrics";
 import type { AnalyticsSnapshot, DesiredAlert, LeadSnapshot, NextAction } from "@/lib/analytics/types";
@@ -43,9 +48,15 @@ function isWorkable(lead: LeadSnapshot | undefined): lead is LeadSnapshot {
   return Boolean(lead) && lead!.archivedAt === null && !lead!.doNotContact && isActiveLead(lead!);
 }
 
-/** A future follow-up means the lead already has a next action. */
-function hasFutureFollowUp(lead: LeadSnapshot, nowIso: string): boolean {
-  return lead.nextFollowUpAt !== null && lead.nextFollowUpAt >= nowIso;
+/**
+ * A follow-up due today or later means the lead already has a next action.
+ *
+ * Day-based on purpose: a follow-up scheduled for today is a next action even
+ * after its time-of-day has passed, and it is reported as "due today" — not as
+ * overdue and not as missing — everywhere in the application.
+ */
+function hasPendingFollowUp(lead: LeadSnapshot, today: string): boolean {
+  return lead.nextFollowUpAt !== null && isFollowUpPending(lead.nextFollowUpAt, today);
 }
 
 function quoteLabel(quote: { quoteNumber: string; currencyCode: string; currencyLabel: string; totalMinor: number }): string {
@@ -57,14 +68,13 @@ function quoteLabel(quote: { quoteNumber: string; currencyCode: string; currency
 
 /* Rule A ------------------------------------------------------------------- */
 
-function overdueFollowUps({ snapshot, now }: RuleInput): DesiredAlert[] {
-  const nowIso = now.toISOString();
+function overdueFollowUps({ snapshot, today }: RuleInput): DesiredAlert[] {
   const leads = leadIndex(snapshot);
   const alerts: DesiredAlert[] = [];
 
   for (const followUp of snapshot.followUps) {
     if (followUp.status !== "scheduled") continue;
-    if (followUp.dueAt >= nowIso) continue;
+    if (!isFollowUpOverdue(followUp.dueAt, today)) continue;
 
     const lead = leads.get(followUp.leadId);
     if (!isWorkable(lead)) continue;
@@ -84,10 +94,10 @@ function overdueFollowUps({ snapshot, now }: RuleInput): DesiredAlert[] {
       nicheName: lead.nicheName,
       priority: "high",
       title: "Follow-up overdue",
-      message: `${typeLabel} was due ${formatPeriodDate(followUp.dueAt.slice(0, 10))}.`,
+      message: `${typeLabel} was due ${formatPeriodDate(followUpDay(followUp.dueAt))}.`,
       actionLabel: "Complete the follow-up",
       reason:
-        "The follow-up is still marked as scheduled and its due time has passed. Completing it records the outcome; nothing is changed automatically.",
+        "The follow-up is still marked as scheduled and its due day has passed. Completing it records the outcome; nothing is changed automatically.",
       dueAt: followUp.dueAt,
       quoteId: null,
       quoteNumber: null,
@@ -142,18 +152,17 @@ function quoteExpiring({ snapshot, today, configs }: RuleInput): DesiredAlert[] 
 
 /**
  * A lead is stale when nothing has happened for longer than the threshold — not
- * merely because the record is old. A lead with a future follow-up already has
- * a next action and is never flagged.
+ * merely because the record is old. A lead with a follow-up due today or later
+ * already has a next action and is never flagged.
  */
-function staleLeads({ snapshot, now, configs }: RuleInput): DesiredAlert[] {
+function staleLeads({ snapshot, now, today, configs }: RuleInput): DesiredAlert[] {
   const staleDays = configs.stale_leads.staleDays ?? 7;
-  const nowIso = now.toISOString();
   const threshold = new Date(now.getTime() - staleDays * 86_400_000).toISOString();
   const alerts: DesiredAlert[] = [];
 
   for (const lead of snapshot.leads) {
     if (!isWorkable(lead)) continue;
-    if (hasFutureFollowUp(lead, nowIso)) continue;
+    if (hasPendingFollowUp(lead, today)) continue;
 
     const lastTouch = lead.lastContactAt ?? lead.createdAt;
     if (lastTouch >= threshold) continue;
@@ -192,8 +201,7 @@ function staleLeads({ snapshot, now, configs }: RuleInput): DesiredAlert[] {
  * Interest is taken only from a structured outcome or a stage that already
  * implies it. Free-text notes are never classified.
  */
-function interestedWithoutNextAction({ snapshot, now }: RuleInput): DesiredAlert[] {
-  const nowIso = now.toISOString();
+function interestedWithoutNextAction({ snapshot, today }: RuleInput): DesiredAlert[] {
   const quotesAwaiting = new Set(
     snapshot.quotes.filter((quote) => quote.status === "sent").map((quote) => quote.leadId),
   );
@@ -202,7 +210,7 @@ function interestedWithoutNextAction({ snapshot, now }: RuleInput): DesiredAlert
   for (const lead of snapshot.leads) {
     if (!isWorkable(lead)) continue;
     if (!lead.hasInterest) continue;
-    if (hasFutureFollowUp(lead, nowIso)) continue;
+    if (hasPendingFollowUp(lead, today)) continue;
     if (quotesAwaiting.has(lead.id)) continue;
 
     alerts.push({

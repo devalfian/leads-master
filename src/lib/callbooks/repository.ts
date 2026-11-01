@@ -5,6 +5,7 @@ import type { ValidationResult } from "./graph";
 import { findTemplate, instantiateTemplate } from "./templates";
 import { createSnapshot, foldSessionPath, parseSnapshot, serializeSnapshot } from "./session";
 import { isOutcomeKey } from "./outcomes";
+import { followUpTypeForOutcome } from "@/lib/leads/types";
 import type {
   CallBranch,
   CallNode,
@@ -1317,6 +1318,45 @@ export type FinishSessionInput = {
   followUpAt?: string | null;
 };
 
+/**
+ * Turns the follow-up date recorded on a lead-linked call into a follow-up task.
+ *
+ * Without this, a date entered at the end of a Callbook call lived only on
+ * `call_sessions`, so the lead's Follow-ups panel, `nextFollowUpAt`, the dashboard
+ * counters, the Analytics due/overdue figures and the automation rules all ignored
+ * it — and rules such as "interested lead has no next action" fired against a lead
+ * that had a callback booked. `follow_ups.call_session_id` exists for exactly this
+ * link.
+ *
+ * Two safety rules match the rest of the application: a do-not-contact or archived
+ * lead never gets a new follow-up task, and the task is only written when the call
+ * result itself was saved.
+ */
+async function planFollowUpForLead(
+  session: CallSessionDetail,
+  input: { nextAction: string | null; outcomeKey: string },
+): Promise<{ id: string; leadId: string; type: string; notes: string } | null> {
+  if (!session.leadId) return null;
+
+  const db = await getDb();
+  const lead = await db.first<Row>(
+    "SELECT id, do_not_contact, archived_at FROM leads WHERE id = ?",
+    [session.leadId],
+  );
+  if (!lead) return null;
+  if (num(lead["do_not_contact"]) === 1 || nullableStr(lead["archived_at"]) !== null) {
+    // The call result is still saved; only the outreach reminder is withheld.
+    return null;
+  }
+
+  return {
+    id: createId(),
+    leadId: str(lead["id"]),
+    type: followUpTypeForOutcome(input.outcomeKey),
+    notes: input.nextAction ?? `Follow-up from ${session.callbookTitle}`,
+  };
+}
+
 export async function finishCallSession(
   sessionId: string,
   input: FinishSessionInput,
@@ -1349,18 +1389,54 @@ export async function finishCallSession(
   const session = await requireActiveSession(sessionId);
   const now = nowIso();
 
-  await db.run(
-    `UPDATE call_sessions
-        SET status = 'completed',
-            outcome_key = ?,
-            notes = ?,
-            next_action = ?,
-            follow_up_at = ?,
-            ended_at = ?,
-            updated_at = ?
-      WHERE id = ? AND status = 'in_progress'`,
-    [input.outcomeKey, notes, nextAction || null, followUpAt, now, now, sessionId],
-  );
+  const followUp = followUpAt
+    ? await planFollowUpForLead(session, {
+        nextAction: nextAction || null,
+        outcomeKey: input.outcomeKey,
+      })
+    : null;
+
+  const statements: SqlStatement[] = [
+    {
+      sql: `UPDATE call_sessions
+               SET status = 'completed',
+                   outcome_key = ?,
+                   notes = ?,
+                   next_action = ?,
+                   follow_up_at = ?,
+                   ended_at = ?,
+                   updated_at = ?
+             WHERE id = ? AND status = 'in_progress'`,
+      params: [input.outcomeKey, notes, nextAction || null, followUpAt, now, now, sessionId],
+    },
+  ];
+
+  if (followUp) {
+    // Written in the same atomic batch as the result, and only once per call: the
+    // `NOT EXISTS` guard makes a replayed finish unable to schedule a second task.
+    statements.push({
+      sql: `INSERT INTO follow_ups
+              (id, lead_id, lead_call_id, call_session_id, due_at, type, notes, status,
+               completed_at, created_at, updated_at)
+            SELECT ?, ?, NULL, ?, ?, ?, ?, 'scheduled', NULL, ?, ?
+             WHERE NOT EXISTS (SELECT 1 FROM follow_ups WHERE call_session_id = ?)
+               AND EXISTS (SELECT 1 FROM call_sessions WHERE id = ? AND status = 'completed')`,
+      params: [
+        followUp.id,
+        followUp.leadId,
+        sessionId,
+        followUpAt,
+        followUp.type,
+        followUp.notes,
+        now,
+        now,
+        sessionId,
+        sessionId,
+      ],
+    });
+  }
+
+  await db.batch(statements);
 
   const updated = await loadSessionDetail(session.id);
   if (!updated) throw new RepositoryError("not_found", "That call session no longer exists.");

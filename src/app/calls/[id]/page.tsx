@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -75,12 +75,22 @@ export default async function CallSessionPage({
         description={`${session.callbookTitle} · published v${session.publishedVersion} · ${formatDateTime(session.startedAt)}`}
         meta={<OutcomeBadge outcomeKey={session.outcomeKey} />}
         actions={
-          <Button asChild variant="secondary">
-            <Link href="/calls">
-              <ArrowLeft aria-hidden="true" />
-              Back to Call History
-            </Link>
-          </Button>
+          <>
+            {session.leadId ? (
+              <Button asChild variant="secondary">
+                <Link href={`/leads/${session.leadId}`}>
+                  <UserRound aria-hidden="true" />
+                  View lead
+                </Link>
+              </Button>
+            ) : null}
+            <Button asChild variant="secondary">
+              <Link href="/calls">
+                <ArrowLeft aria-hidden="true" />
+                Back to Call History
+              </Link>
+            </Button>
+          </>
         }
       />
 

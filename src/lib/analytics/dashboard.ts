@@ -11,6 +11,7 @@
 
 import { normaliseConfig, type AutomationRuleKey, type RuleConfig } from "@/lib/automation/types";
 import { buildNextActions, evaluateAllRules } from "@/lib/automation/rules";
+import { followUpDay, isFollowUpOverdue } from "@/lib/leads/follow-up-time";
 import {
   ACTIVE_LEAD_STATUSES,
   buildCohortFunnel,
@@ -25,7 +26,7 @@ import {
   quoteAcceptance,
   stageDistribution,
 } from "./metrics";
-import { addDays, previousPeriod, type AnalyticsPeriod } from "./period";
+import { addDays, previousPeriod, todayInReportingZone, type AnalyticsPeriod } from "./period";
 import type {
   AnalyticsDashboard,
   AnalyticsSnapshot,
@@ -81,8 +82,9 @@ export function buildAnalyticsDashboard({
   enabled: Record<AutomationRuleKey, boolean>;
 }): AnalyticsDashboard {
   const { events, previousEvents, leads, followUps, quotes } = snapshot;
-  const nowIso = now.toISOString();
-  const today = now.toISOString().slice(0, 10);
+  // The reporting zone, not the server's UTC day: the same day boundary the lead
+  // page and the dashboard's own "due today" counter use.
+  const today = todayInReportingZone(now);
 
   /* Activity -------------------------------------------------------------- */
 
@@ -91,17 +93,19 @@ export function buildAnalyticsDashboard({
   const conversations = countConversations(events);
   const interestedLeads = countInterestedLeads(events);
 
-  // "Due" is period-scoped (the workload scheduled in this window); "overdue"
-  // is current state, because that is what the user has to act on right now.
+  // "Due" is period-scoped (the workload scheduled in this window); "overdue" is
+  // current state, because that is what the user has to act on right now. Both are
+  // calendar-day comparisons so they agree with the lead page, `getLeadStats()` and
+  // the automation queue — see `@/lib/leads/follow-up-time`.
   const followUpsDue = followUps.filter(
     (followUp) =>
       followUp.status === "scheduled" &&
-      followUp.dueAt >= period.startIso &&
-      followUp.dueAt < period.endIso,
+      followUpDay(followUp.dueAt) >= period.fromDate &&
+      followUpDay(followUp.dueAt) <= period.toDate,
   ).length;
 
   const followUpsOverdue = followUps.filter(
-    (followUp) => followUp.status === "scheduled" && followUp.dueAt < nowIso,
+    (followUp) => followUp.status === "scheduled" && isFollowUpOverdue(followUp.dueAt, today),
   ).length;
 
   /* Pipeline -------------------------------------------------------------- */

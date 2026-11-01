@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { addDays } from "@/lib/analytics/period";
+import { followUpToday } from "./follow-up-time";
 
 /**
  * Phase 3 coverage against a real database built from the migrations: leads,
@@ -444,5 +446,124 @@ describe("lead activity timeline", () => {
     // Newest first.
     const times = detail!.timeline.map((entry) => entry.at);
     expect([...times].sort().reverse()).toEqual(times);
+  });
+});
+
+describe("follow-up day counting", () => {
+  it("counts a follow-up due today as due today, whatever shape it is stored in", async () => {
+    const lead = await makeLead({ businessName: "Due Day Co" });
+    const today = followUpToday();
+    const before = await repo.getLeadStats();
+
+    // The lead forms store a calendar day…
+    await repo.createFollowUp(lead.id, { dueAt: today, type: "call_back" });
+    // …a completed Callbook call stores an instant inside the same reporting day.
+    await repo.createFollowUp(lead.id, { dueAt: `${today}T02:00:00.000Z`, type: "meeting" });
+    // Yesterday is the only one that is overdue.
+    await repo.createFollowUp(lead.id, {
+      dueAt: addDays(today, -1),
+      type: "call_back",
+    });
+
+    const after = await repo.getLeadStats();
+    expect(after.dueToday - before.dueToday).toBe(2);
+    expect(after.overdue - before.overdue).toBe(1);
+    expect(after.openFollowUps - before.openFollowUps).toBe(3);
+  });
+});
+
+describe("Callbook call handing off to the lead", () => {
+  async function publishedCallbook(marketId: string | null, title: string) {
+    const callbook = await callbooksRepo.createCallbook({
+      title,
+      primaryGoal: "book_meeting",
+      templateId: "proposal-follow-up",
+      marketId,
+    });
+    await callbooksRepo.publishCallbook(callbook.id);
+    return callbook;
+  }
+
+  it("turns the follow-up date on a lead-linked call into a real follow-up task", async () => {
+    const usa = await market("USA");
+    const lead = await makeLead({ businessName: "Callbook Hand-off Co" });
+    const callbook = await publishedCallbook(usa.market.id, "Hand-off callbook");
+
+    const session = await callbooksRepo.startCallSession(callbook.id, { leadId: lead.id });
+    await callbooksRepo.finishCallSession(session.id, {
+      outcomeKey: "meeting_booked",
+      notes: "Wants the proposal before the meeting",
+      nextAction: "Send the proposal on Monday",
+      followUpAt: "2026-12-01T02:00:00.000Z",
+    });
+
+    const detail = await repo.getLeadDetail(lead.id);
+    expect(detail!.followUps).toHaveLength(1);
+
+    const task = detail!.followUps[0]!;
+    expect(task.status).toBe("scheduled");
+    // A booked meeting becomes a meeting to attend, not a generic callback.
+    expect(task.type).toBe("meeting");
+    expect(task.callSessionId).toBe(session.id);
+    expect(task.leadCallId).toBeNull();
+    expect(task.dueAt).toBe("2026-12-01T02:00:00.000Z");
+    expect(task.notes).toBe("Send the proposal on Monday");
+
+    // The same commitment the dashboard, Analytics and Automation read.
+    expect(detail!.openFollowUpCount).toBe(1);
+    expect(detail!.nextFollowUpAt).toBe("2026-12-01T02:00:00.000Z");
+    expect(detail!.timeline.some((entry) => entry.kind === "follow_up")).toBe(true);
+  });
+
+  it("records no task when the call has no follow-up date", async () => {
+    const usa = await market("USA");
+    const lead = await makeLead({ businessName: "No Date Co" });
+    const callbook = await publishedCallbook(usa.market.id, "No date callbook");
+
+    const session = await callbooksRepo.startCallSession(callbook.id, { leadId: lead.id });
+    const finished = await callbooksRepo.finishCallSession(session.id, {
+      outcomeKey: "no_answer",
+      notes: "Rang out",
+    });
+
+    expect(finished.followUpAt).toBeNull();
+    const detail = await repo.getLeadDetail(lead.id);
+    expect(detail!.followUps).toHaveLength(0);
+    expect(detail!.openFollowUpCount).toBe(0);
+  });
+
+  it("keeps a follow-up date on a call that was never linked to a lead", async () => {
+    const callbook = await publishedCallbook(null, "Standalone callbook");
+    const session = await callbooksRepo.startCallSession(callbook.id, {
+      prospectName: "Walk-in prospect",
+    });
+    expect(session.leadId).toBeNull();
+
+    const finished = await callbooksRepo.finishCallSession(session.id, {
+      outcomeKey: "follow_up_later",
+      nextAction: "Call back next week",
+      followUpAt: "2026-12-02T02:00:00.000Z",
+    });
+
+    // Call History keeps the date; there is no lead to schedule a task on.
+    expect(finished.followUpAt).toBe("2026-12-02T02:00:00.000Z");
+    const history = await repo.listCallHistory({ query: "walk-in", pageSize: 5 });
+    expect(history.items[0]?.followUpAt).toBe("2026-12-02T02:00:00.000Z");
+  });
+
+  it("saves the call result but withholds the task for a do-not-contact lead", async () => {
+    const usa = await market("USA");
+    const lead = await makeLead({ businessName: "Do Not Call Co", doNotContact: true });
+    const callbook = await publishedCallbook(usa.market.id, "Guard callbook");
+
+    const session = await callbooksRepo.startCallSession(callbook.id, { leadId: lead.id });
+    const finished = await callbooksRepo.finishCallSession(session.id, {
+      outcomeKey: "follow_up_later",
+      followUpAt: "2026-12-03T02:00:00.000Z",
+    });
+
+    expect(finished.status).toBe("completed");
+    const detail = await repo.getLeadDetail(lead.id);
+    expect(detail!.followUps).toHaveLength(0);
   });
 });

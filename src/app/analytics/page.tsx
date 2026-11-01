@@ -179,13 +179,13 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Se
           <KpiCard
             label="Follow-ups due"
             value={String(dashboard.activity.followUpsDue)}
-            definition="Scheduled follow-ups whose due time falls inside the reporting period."
+            definition="Scheduled follow-ups whose due day falls inside the reporting period (WIB)."
             unavailableReason="Scheduled work in this window — not compared with the previous period."
           />
           <KpiCard
             label="Follow-ups overdue"
             value={String(dashboard.activity.followUpsOverdue)}
-            definition="Scheduled follow-ups whose due time has already passed. Completed and cancelled tasks are excluded."
+            definition="Scheduled follow-ups whose due day has passed (today's follow-ups are not overdue). Completed and cancelled tasks are excluded."
             tone={dashboard.activity.followUpsOverdue > 0 ? "warning" : "default"}
             unavailableReason="Current state as of right now, not period-scoped."
           />

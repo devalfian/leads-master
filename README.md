@@ -23,7 +23,9 @@ stack (the repository started empty — see "Project origin" at the end).
   delivery tips, response buttons, back, unexpected-response handling and quick notes. It also shows a
   collapsible **call context panel** with the market, niche and package references from the pricing
   database.
-- **Call result** — outcome, notes, next action, follow-up date; stored per session.
+- **Call result** — outcome, notes, next action, follow-up date. A call started from a lead turns that
+  follow-up date into a real follow-up task on the lead (`follow_ups.call_session_id`), so the lead
+  page, the dashboard, Analytics and Automation all see the same commitment.
 - **Call History** — every session with its outcome, follow-up and the route taken. Callbook runs and
   calls logged against a lead are shown in one list, with search, market/type/outcome/date filters and
   pagination. Each logged call can be followed up with another log from the same row.
@@ -131,13 +133,25 @@ of the last visit. Their writes need the server, and the UI does not pretend oth
 - **Follow-ups** — `follow_ups` rows with a due date, type and status (`scheduled`/`completed`/
   `cancelled`). Overdue follow-ups are never auto-completed, and a do-not-contact lead cannot be given a
   new follow-up until the flag is cleared.
+- **One follow-up rule everywhere** — `src/lib/leads/follow-up-time.ts` decides what "due today" and
+  "overdue" mean, because `due_at` is stored either as a calendar day (lead forms) or as a full UTC
+  instant (a Callbook call asks for a date *and* a time). The lead badge, `getLeadStats()`, Analytics
+  and the automation rules all compare **days in the reporting zone (WIB)**, so a follow-up due today is
+  never "due today" in one place and "overdue" in another. A follow-up due today still counts as a next
+  action: it is not "overdue" and it suppresses the stale-lead and "interested with no next action"
+  reminders.
 - **Deletion** — permanent deletion is refused while the lead has call history (`409 has_calls`);
   archiving is the safe path and keeps every call.
 - **Callbook integration** — a Callbook run can be started for a lead (`/callbooks/[id]?lead=…`). The
   business name is snapshotted into `call_sessions.prospect_name` and the run appears on the lead's
-  activity. A Callbook from another market is rejected.
+  activity. A Callbook from another market is rejected. Finishing that call with a follow-up date writes
+  a `follow_ups` row in the same atomic batch (type `meeting` for a booked meeting, `call_back` otherwise,
+  notes taken from the next action), linked through `call_session_id`. A do-not-contact or archived lead
+  still gets its call result saved, but no outreach task is created.
 - **Dashboard** — lead counts, calls logged, never-contacted leads, follow-ups due/overdue and estimated
-  pipeline **per currency**. Currencies are never summed together and no conversion happens.
+  pipeline **per currency**. Currencies are never summed together and no conversion happens. "Calls
+  logged" counts every recorded attempt, including a Callbook run that was started but never finished;
+  Analytics counts only finished calls inside the reporting period, and says so.
 
 Two call shapes are stored because they are genuinely different records: `call_sessions` (a run through
 a published Callbook, unchanged) and `lead_calls` (a call logged manually, with no invented snapshot).

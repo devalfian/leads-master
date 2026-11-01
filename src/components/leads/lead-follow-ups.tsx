@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { apiDelete, apiPost } from "@/lib/api/client";
 import { submitWrite } from "@/lib/offline/client";
 import { followUpState } from "@/components/leads/lead-badges";
+import { followUpDay } from "@/lib/leads/follow-up-time";
 import { FOLLOW_UP_TYPES, FOLLOW_UP_TYPE_LABELS, type FollowUp } from "@/lib/leads/types";
 
 export function LeadFollowUps({
@@ -191,7 +192,7 @@ export function LeadFollowUps({
                     <Badge tone={tone}>{label}</Badge>
                   </p>
                   <p className="mt-0.5 text-[11.5px] text-muted">
-                    Due {followUp.dueAt.slice(0, 10)}
+                    Due {followUpDay(followUp.dueAt)}
                     {followUp.notes ? ` · ${followUp.notes}` : ""}
                   </p>
                 </div>

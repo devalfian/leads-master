@@ -189,7 +189,9 @@ export function CallSummaryForm({ session }: { session: CallSessionDetail }) {
             />
             <FieldHint>
               {showFollowUp
-                ? "Stored with this call so you can find it in Call History."
+                ? session.leadId
+                  ? "Saved as a follow-up task on the linked lead, so it shows in the lead's follow-ups, the dashboard and Analytics."
+                  : "Stored with this call in Call History. Start the call from a lead to turn it into a follow-up task."
                 : "Relevant for follow-up results. Choose a follow-up outcome to enable it."}
             </FieldHint>
           </div>

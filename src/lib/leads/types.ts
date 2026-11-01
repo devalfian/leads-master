@@ -96,6 +96,17 @@ export function isFollowUpStatus(value: unknown): value is FollowUpStatus {
   return typeof value === "string" && (FOLLOW_UP_STATUSES as readonly string[]).includes(value);
 }
 
+/**
+ * The follow-up type that matches a recorded call outcome.
+ *
+ * A booked meeting is a meeting to attend; every other outcome that asks for a
+ * follow-up is a call back. The mapping is deliberately small and honest — the
+ * application never infers more from an outcome than it actually says.
+ */
+export function followUpTypeForOutcome(outcomeKey: string | null): FollowUpType {
+  return outcomeKey === "meeting_booked" ? "meeting" : "call_back";
+}
+
 export type Lead = {
   id: string;
   businessName: string;

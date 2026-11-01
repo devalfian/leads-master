@@ -12,6 +12,7 @@ import type { SqlValue } from "@/lib/db";
 import { isOutcomeKey, outcomeLabel } from "@/lib/callbooks/outcomes";
 import { formatMinorUnits } from "@/lib/quotes/money";
 import { leadMatchKeys, normalizeWebsiteUrl } from "./normalize";
+import { followUpDay, followUpToday, FOLLOW_UP_DAY_SQL_MODIFIER } from "./follow-up-time";
 import {
   isFollowUpStatus,
   isFollowUpType,
@@ -924,7 +925,7 @@ export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
       id: `${followUp.id}-scheduled`,
       kind: "follow_up",
       at: followUp.createdAt,
-      title: `Follow-up scheduled · ${followUp.dueAt.slice(0, 10)}`,
+      title: `Follow-up scheduled · ${followUpDay(followUp.dueAt)}`,
       detail: followUp.notes || null,
     });
     if (followUp.completedAt) {
@@ -1167,7 +1168,9 @@ export type LeadStats = {
  */
 export async function getLeadStats(): Promise<LeadStats> {
   const db = await getDb();
-  const today = new Date().toISOString().slice(0, 10);
+  // Same calendar day as the lead page, Analytics and the automation rules: the
+  // reporting zone, not the server's UTC day (see `./follow-up-time`).
+  const today = followUpToday();
   const activeStatuses = [
     "new",
     "researching",
@@ -1197,10 +1200,10 @@ export async function getLeadStats(): Promise<LeadStats> {
       `SELECT
          (SELECT COUNT(*) FROM follow_ups WHERE status = 'scheduled') AS open_follow_ups,
          (SELECT COUNT(*) FROM follow_ups
-           WHERE status = 'scheduled' AND substr(due_at, 1, 10) = ?) AS due_today,
+           WHERE status = 'scheduled' AND date(due_at, ?) = ?) AS due_today,
          (SELECT COUNT(*) FROM follow_ups
-           WHERE status = 'scheduled' AND substr(due_at, 1, 10) < ?) AS overdue`,
-      [today, today],
+           WHERE status = 'scheduled' AND date(due_at, ?) < ?) AS overdue`,
+      [FOLLOW_UP_DAY_SQL_MODIFIER, today, FOLLOW_UP_DAY_SQL_MODIFIER, today],
     ),
     db.all<Row>(
       `SELECT m.code, m.name, m.currency_code, m.currency_label,

@@ -55,8 +55,8 @@ export const AUTOMATION_RULES: readonly AutomationRuleDefinition[] = [
     key: "overdue_followups",
     name: "Overdue follow-ups",
     description:
-      "Raises one reminder per scheduled follow-up whose due time has passed and which has not been completed or cancelled.",
-    trigger: "follow_ups.status = 'scheduled' AND follow_ups.due_at < now",
+      "Raises one reminder per scheduled follow-up whose due day has passed and which has not been completed or cancelled. A follow-up due today is not overdue.",
+    trigger: "follow_ups.status = 'scheduled' AND follow-up day < today (reporting zone)",
     priority: "high",
     configFields: [],
     defaultConfig: {},
@@ -88,7 +88,7 @@ export const AUTOMATION_RULES: readonly AutomationRuleDefinition[] = [
     description:
       "Raises one reminder per active lead with no recorded contact and no scheduled follow-up for longer than the threshold.",
     trigger:
-      "lead active AND not do-not-contact AND no future follow-up AND last contact (or creation) older than staleDays",
+      "lead active AND not do-not-contact AND no follow-up due today or later AND last contact (or creation) older than staleDays",
     priority: "low",
     configFields: [
       {
@@ -108,7 +108,7 @@ export const AUTOMATION_RULES: readonly AutomationRuleDefinition[] = [
     name: "Interested lead without a next action",
     description:
       "Raises one reminder per lead with a recorded interest outcome but no scheduled follow-up and no quotation awaiting a decision.",
-    trigger: "interest outcome recorded AND no scheduled follow-up AND no sent quotation",
+    trigger: "interest outcome recorded AND no follow-up due today or later AND no sent quotation",
     priority: "medium",
     configFields: [],
     defaultConfig: {},

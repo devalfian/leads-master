@@ -168,15 +168,20 @@ export default async function DashboardPage() {
                   </div>
                 ))}
               </dl>
-
-              <div className="grid gap-3 md:grid-cols-2">
+              <p className="text-[11px] leading-relaxed text-muted">
+                &ldquo;Calls logged&rdquo; counts every recorded attempt, including a Callbook run that
+                was started but never finished. Analytics counts only finished calls inside the period
+                it covers.
+              </p>
+                <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-card border border-warning/30 bg-warning/10 px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wider text-warning">Follow-ups</p>
                   <p className="mt-0.5 text-[12.5px] text-secondary">
                     {stats.overdue} overdue · {stats.dueToday} due today · {stats.openFollowUps} scheduled
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted">
-                    Due/overdue use the date entered on the follow-up.
+                    Due/overdue are calendar-day comparisons in WIB — the same rule the lead page,
+                    Analytics and Automation use.
                   </p>
                 </div>
                 <div className="rounded-card border border-border-subtle bg-surface px-3 py-2.5">
@@ -292,13 +297,27 @@ export default async function DashboardPage() {
                 <div className="rounded-card border border-border-subtle bg-surface p-4">
                   <h2 className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
                     <Sparkles className="size-3.5 text-accent-soft" aria-hidden="true" />
-                    Phase 1 scope
+                    What lives here
                   </h2>
                   <p className="mt-1 text-[12px] leading-relaxed text-secondary">
-                    Pricing library and session planning only. There is no lead list, live callbook or
-                    outreach automation here, and saved sessions keep the guide data they were created
-                    with.
+                    Pricing and sessions feed the published Call Playbooks. A lead links its calls,
+                    follow-ups and quotations together, and Analytics and Automation read those same
+                    records — saved sessions keep the guide data they were created with.
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Button asChild size="sm" variant="ghost">
+                      <Link href="/leads">Leads</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="ghost">
+                      <Link href="/callbooks">Call Playbooks</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="ghost">
+                      <Link href="/quotes">Quotes</Link>
+                    </Button>
+                    <Button asChild size="sm" variant="ghost">
+                      <Link href="/analytics">Analytics</Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </section>
