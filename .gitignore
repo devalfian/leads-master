@@ -1,0 +1,26 @@
+node_modules/
+.next/
+.open-next/
+.wrangler/
+.vercel/
+.data/
+out/
+build/
+dist/
+coverage/
+
+.env
+.env.local
+.env.*.local
+
+# Wrangler local secrets. Never commit real values.
+.dev.vars
+.dev.vars.*
+
+next-env.d.ts
+cloudflare-env.d.ts
+*.tsbuildinfo
+
+.DS_Store
+Thumbs.db
+*.log

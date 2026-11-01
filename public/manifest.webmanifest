@@ -1,0 +1,47 @@
+{
+  "name": "Call Playbooks — Sales command center",
+  "short_name": "Leads Master",
+  "description": "Call playbooks, leads, quotations and call history for website-development cold calling.",
+  "id": "/dashboard",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0d14",
+  "theme_color": "#0b0d14",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Leads",
+      "url": "/leads"
+    },
+    {
+      "name": "Call playbooks",
+      "url": "/callbooks"
+    },
+    {
+      "name": "Call history",
+      "url": "/calls"
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0b0d14;
+  --color-sidebar: #10131c;
+  --color-surface: #151925;
+  --color-surface-elevated: #1b2030;
+  --color-border-subtle: #2b3142;
+  --color-accent: #7c3aed;
+  --color-accent-hover: #6d28d9;
+  --color-accent-soft: #a78bfa;
+  --color-foreground: #f5f7ff;
+  --color-secondary: #a0a8b8;
+  --color-muted: #788196;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #60a5fa;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius-card: 14px;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border-subtle);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-accent) 45%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-soft);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #2b3142;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* React Flow theming (builder canvas only). */
+.react-flow {
+  --xy-background-color: #0f1219;
+  --xy-edge-stroke: #3b4358;
+  --xy-edge-stroke-selected: var(--color-accent-soft);
+  --xy-connectionline-stroke: var(--color-accent-soft);
+  --xy-handle-background-color: #3b4358;
+  --xy-handle-border-color: #0f1219;
+  --xy-attribution-background-color: transparent;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: none;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.react-flow__controls-button {
+  background-color: var(--color-surface-elevated);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-secondary);
+  fill: var(--color-secondary);
+}
+
+.react-flow__controls-button:hover {
+  background-color: #232a3c;
+}
+
+.react-flow__edge-text {
+  fill: var(--color-secondary);
+  font-size: 11px;
+}
+
+.react-flow__edge-textbg {
+  fill: #0f1219;
+}
+
+/* Print stylesheet for saved sessions -------------------------------------- */
+/* Only the preparation content should reach paper: the navigation, edit
+   controls, dialogs and toasts are removed, and the dark palette is replaced by
+   a light, high-contrast one so the sheet is readable and ink-friendly. */
+@media print {
+  html,
+  body {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  body * {
+    color: #111827 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  aside,
+  nav[aria-label="Breadcrumb"] {
+    display: none !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  [class*="bg-surface"],
+  [class*="bg-background"],
+  [class*="bg-sidebar"],
+  [class*="bg-accent/"] {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+
+  [class*="border"] {
+    border-color: #d4d4d8 !important;
+  }
+
+  a {
+    text-decoration: none !important;
+  }
+
+  a[href^="http"]::after {
+    content: "";
+  }
+
+  section,
+  article,
+  li,
+  table,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
