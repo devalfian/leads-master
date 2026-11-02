@@ -1,31 +1,99 @@
 # Call Playbooks
 
-A single-user sales workspace for a freelance web developer selling website work to service
-businesses. It holds the lead list, branching cold-calling playbooks, quotations, call history,
-sales analytics and a reminder queue, on top of the three cold-calling guides (Indonesia,
-Australia, United States) that supply the markets, niches, schedules and prices behind them.
+**A single-user sales workspace for planning and running outbound website-development sales.**
 
-Everything runs on Next.js 15 + Cloudflare Workers + D1. There is **no authentication** and no
-per-user isolation: read [Access model](#access-model-important-limitation) before you put an
-instance on a public hostname.
+Manage prospects, build branching cold-call playbooks, log calls, schedule follow-ups, prepare quotations, and review sales activity in one application. Its Indonesia, Australia, and United States guide data powers the pricing library, session planner, and call context.
 
-| Area | Where | Section |
-| --- | --- | --- |
-| Leads, call logging, follow-ups | `/leads` | [Leads, call logging and follow-ups](#leads-call-logging-and-follow-ups-phase-3) |
-| Call Playbooks: build, publish, run live | `/callbooks`, `/calls` | [What works](#what-works) |
-| Quotations | `/quotes` | [Quote Builder](#quote-builder-phase-4) |
-| Sales analytics | `/analytics` | [Analytics and automation](#analytics-and-automation-phase-5) |
-| Reminder rules | `/automation` | [Analytics and automation](#analytics-and-automation-phase-5) |
-| Pricing library, session planner, guide data | `/dashboard/*` | [Pricing Library + Session Planner](#pricing-library--session-planner-phase-1) |
-| Offline use (installable app) | — | [Offline use and syncing](#offline-use-and-syncing-phase-5) |
-| Running your own copy | — | [Run it yourself](#run-it-yourself) |
-| Deploying to Cloudflare | — | [DEPLOY.md](./DEPLOY.md) |
+Built with **Next.js 15, TypeScript, Cloudflare Workers, and D1**. The app also supports installable PWA use and a carefully scoped offline write queue.
 
-Every page is listed in [Pages and endpoints](#pages-and-endpoints); the tables are in
-[Data model at a glance](#data-model-at-a-glance) and the code layout in
-[How the feature is put together](#how-the-feature-is-put-together).
+> [!WARNING]
+> **Authentication is not implemented.** This is a single-user workspace with no per-user data isolation. Anyone who can reach a deployment can read and modify its data. Do not expose an instance containing real data on a public hostname until you protect it with Cloudflare Access, a private network/VPN, or implement real authentication. See [Access model](#access-model-important-limitation) and [DEPLOY.md](./DEPLOY.md#security-do-this-before-using-real-data).
 
-## What works
+## Project overview
+
+### At a glance
+
+| Capability | What it provides |
+| --- | --- |
+| **Lead management** | Searchable lead pipeline, call logs, follow-ups, activity history, duplicate warnings, and archive safeguards |
+| **Call Playbooks** | Branching conversation builder, validation, preview, published snapshots, and guided live Call Mode |
+| **Pricing & session planning** | Editable guide data for Indonesia, Australia, and the United States, plus saved preparation snapshots |
+| **Quote Builder** | Market-specific packages, server-calculated totals, frozen quote details, lifecycle tracking, and print view |
+| **Analytics & reminders** | WIB-based sales metrics and five deterministic, manually triggered reminder rules |
+| **Offline support** | Installable app shell, cached visited pages, and an idempotent queue for explicitly supported writes |
+
+## Contents
+
+- [Project overview](#project-overview)
+  - [At a glance](#at-a-glance)
+- [Architecture overview](#architecture-overview)
+  - [How the system fits together](#how-the-system-fits-together)
+- [Getting started](#getting-started)
+  - [Quick start](#quick-start)
+- [Product capabilities](#product-capabilities)
+  - [What works](#what-works)
+  - [Pages and endpoints](#pages-and-endpoints)
+- [Feature documentation](#feature-documentation)
+  - [Analytics and automation](#analytics-and-automation-phase-5)
+  - [Offline use and syncing](#offline-use-and-syncing-phase-5)
+  - [Quote Builder](#quote-builder-phase-4)
+  - [Leads, call logging and follow-ups](#leads-call-logging-and-follow-ups-phase-3)
+  - [Callbook context](#callbook-context-market-niche-pricing-and-sessions-phase-2)
+  - [Pricing Library and Session Planner](#pricing-library--session-planner-phase-1)
+- [Development and deployment](#development-and-deployment)
+  - [Stack](#stack)
+  - [Run it yourself](#run-it-yourself)
+  - [Cloudflare deployment](#cloudflare-deployment)
+  - [Scripts](#scripts)
+- [Engineering reference](#engineering-reference)
+  - [Data model](#data-model-at-a-glance)
+  - [Feature implementation details](#how-the-feature-is-put-together)
+- [Security, scope, and quality](#security-scope-and-quality)
+  - [Access model and security limitation](#access-model-important-limitation)
+  - [Deliberate scope decisions](#deliberate-scope-decisions)
+  - [Tests](#tests)
+  - [Project origin](#project-origin)
+
+## Architecture overview
+
+### How the system fits together
+
+The application uses one D1 database as the persistent source of truth. The Pricing Library and Session Planner provide guide data to Call Playbooks and quotations; lead and call records feed analytics and reminder evaluation. Offline writes are limited to an explicit allowlist and use idempotency keys when replayed.
+
+```mermaid
+flowchart TD
+    UI[Next.js application] --> API[Route handlers and server-side validation]
+    API --> DB[(Cloudflare D1)]
+    GUIDE[Pricing Library and Session Planner] --> DB
+    LEADS[Leads, calls and follow-ups] --> DB
+    PLAYBOOKS[Call Playbooks and published snapshots] --> DB
+    QUOTES[Quote Builder] --> DB
+    DB --> ANALYTICS[Read-only analytics]
+    DB --> AUTOMATION[On-demand reminder rules]
+    OFFLINE[IndexedDB outbox] -->|allowlisted writes + idempotency key| API
+```
+
+## Getting started
+
+### Quick start
+
+Requirements: **Node.js 22.5+** and **npm 10**. You do not need a Cloudflare account to run the local development setup; a Cloudflare account is required only for deployment.
+
+```bash
+git clone <your-fork-or-clone-url> leads-master
+cd leads-master
+npm install
+npm run db:migrate:local
+npm run dev
+```
+
+Open `http://localhost:3000`. Run the local database migrations **before** opening the app for the first time. See [Run it yourself](#run-it-yourself) for database verification, first-run workflow, quality gates, troubleshooting, and offline testing. See [DEPLOY.md](./DEPLOY.md) for deployment and release procedures.
+
+---
+
+## Product capabilities
+
+### What works
 
 - **Leads** — create, edit, archive, search and filter (market, niche, status, follow-up state,
   website recorded or not, contacted or not, six sort orders, SQL pagination). A lead page shows its
@@ -67,7 +135,7 @@ Every page is listed in [Pages and endpoints](#pages-and-endpoints); the tables 
 
 Everything is persisted in Cloudflare D1. There are no mock endpoints and no fake success states.
 
-## Pages and endpoints
+### Pages and endpoints
 
 Every page below is implemented; there are no placeholder screens.
 
@@ -106,7 +174,9 @@ JSON route handlers live under `/api`:
   `/api/guide-data/[resource]/[id]`
 - automation — `/api/automation/run`, `/api/automation/rules/[key]`
 
-## Analytics and automation (Phase 5)
+## Feature documentation
+
+### Analytics and automation (Phase 5)
 
 `/analytics` and `/automation`. Neither adds a data source: both read the leads, calls, follow-ups
 and quotations the rest of the application already stores.
@@ -159,7 +229,7 @@ and quotations the rest of the application already stores.
   "due today" and "overdue" for the dashboard counters, the lead badge, Analytics and these rules, so
   a follow-up due today is never overdue in one place and pending in another.
 
-## Offline use and syncing (Phase 5)
+### Offline use and syncing (Phase 5)
 
 Field calling happens where the signal is bad, so the workspace is installable and keeps working
 without a connection.
@@ -202,7 +272,7 @@ Not offline: Analytics, Automation, the Callbook builder and the quotation form 
 the cache of the last visit. Their writes need the server (and analytics/automation need a live query),
 and the UI does not pretend otherwise.
 
-## Quote Builder (Phase 4)
+### Quote Builder (Phase 4)
 
 `/quotes`, `/quotes/new`, `/quotes/[id]`, `/quotes/[id]/edit`.
 
@@ -241,7 +311,7 @@ and the UI does not pretend otherwise.
 - **Not revenue** — an accepted quotation records an acceptance, not a payment. No payment record exists,
   so the Quotes page labels its totals as quoted value and groups them per currency.
 
-## Leads, call logging and follow-ups (Phase 3)
+### Leads, call logging and follow-ups (Phase 3)
 
 `/leads`, `/leads/new`, `/leads/[id]`, `/leads/[id]/edit`, and the upgraded `/calls`.
 
@@ -282,7 +352,7 @@ a published Callbook, unchanged) and `lead_calls` (a call logged manually, with 
 `listCallHistory()` unions both in one SQL query, so there is a single Call History view and no second
 history system.
 
-## Callbook context: market, niche, pricing and sessions (Phase 2)
+### Callbook context: market, niche, pricing and sessions (Phase 2)
 
 The Call Playbooks module is wired to the Phase 1 guide data instead of carrying a second copy of it.
 
@@ -308,7 +378,7 @@ The Call Playbooks module is wired to the Phase 1 guide data instead of carrying
   applies defaults, so Callbooks, nodes, published snapshots and call history created before Phase 2
   keep loading unchanged (they simply report an unset market, unclassified step and no talking points).
 
-## Pricing Library + Session Planner (Phase 1)
+### Pricing Library + Session Planner (Phase 1)
 
 The three cold-calling guides (Indonesia, Australia, United States) are stored as D1 master data and
 drive two connected modules:
@@ -364,7 +434,9 @@ The seed-validation report (counts, market codes, recommended prices, US special
 times, market-consistency checks) is rendered on `/dashboard/settings/guide-data` and asserted by
 `src/lib/guides/seed.test.ts` against a real database built from the migrations.
 
-## Stack
+## Development and deployment
+
+### Stack
 
 | Area | Choice |
 | --- | --- |
@@ -380,7 +452,7 @@ times, market-consistency checks) is rendered on `/dashboard/settings/guide-data
 
 No runtime dependency is optional: the app needs one database binding and nothing else.
 
-## Run it yourself
+### Run it yourself
 
 The whole workspace runs on one machine with no Cloudflare account. A Cloudflare account is only
 needed for the last step (putting it on the internet). There are **no environment variables and no
@@ -551,14 +623,14 @@ if you want to check production behaviour on your own machine first.
 | An offline change is stuck in the sync bar | A 4xx means the server refused it: fix the input and **Retry**, or **Discard**. A 5xx keeps it queued and retries later. |
 | An installed app shows an old shell | `CACHE_VERSION` in `public/sw.js` was not bumped for a caching change; bump it and redeploy. |
 
-## Cloudflare deployment
+### Cloudflare deployment
 
 Deployment lives in **[DEPLOY.md](./DEPLOY.md)** — first deploy, the release checklist, migration
 ordering, rollback, backups, Cloudflare Access and the post-deploy offline checks. The commands
 themselves are in [Run it yourself → Put it online](#7-put-it-online); in short: create a D1 database,
 paste its id into `wrangler.jsonc`, apply the remote migrations, then `npm run cf:deploy`.
 
-## Scripts
+### Scripts
 
 | Script | Purpose |
 | --- | --- |
@@ -576,7 +648,9 @@ paste its id into `wrangler.jsonc`, apply the remote migrations, then `npm run c
 | `npm run cf:typegen` | Regenerate `cloudflare-env.d.ts` binding types from `wrangler.jsonc` |
 | `node scripts/generate-icons.mjs` | Regenerate the PWA PNG icons in `public/icons/` |
 
-## Data model at a glance
+## Engineering reference
+
+### Data model at a glance
 
 Everything lives in D1; there is no cache database, no queue service and no external store.
 
@@ -592,7 +666,7 @@ Everything lives in D1; there is no cache database, no queue service and no exte
 
 Analytics owns no tables: it reads the lead, call, follow-up and quote tables above.
 
-## How the feature is put together
+### How the feature is put together
 
 ```
 next.config.ts                          Next.js config (the D1 binding comes from OpenNext)
@@ -720,7 +794,9 @@ from, and why the only tables Phase 5 writes are the automation ones.
 its key so a corrected retry still works. The queue never reorders, never skips ahead on a transport
 failure, and never invents a result.
 
-## Access model (important limitation)
+## Security, scope, and quality
+
+### Access model (important limitation)
 
 This workspace has **no authentication**: it is a single-user tool. There is no `owner_id` column
 and no per-user data isolation, because inventing a login would be worse than being explicit.
@@ -741,7 +817,7 @@ If you deploy this, do one of these **before** you put real data in it:
 
 Do not rely on the URL being hard to guess. It is not.
 
-## Deliberate scope decisions
+### Deliberate scope decisions
 
 - **Loops are allowed.** A conversation may return to an earlier step; publish reports it as a
   warning so the author can check every loop still reaches an outcome. Traversal and Back still
@@ -764,11 +840,15 @@ Do not rely on the URL being hard to guess. It is not.
   invents a result, never merges records and never retries a refusal. A change the server rejects stays
   on the device and is shown to the user until they retry or discard it.
 
-## Tests
+### Tests
+
+Run the test suite with:
 
 ```bash
-npm test        # 257 tests in 20 files (verified)
+npm test
 ```
+
+The repository documentation records **257 tests across 20 files** for the current suite. Re-run the command on your checkout to verify the present result.
 
 The suite needs no fixtures: database tests open a real SQLite database in a temp directory and apply
 `migrations/*.sql`, so the schema under test is exactly the schema you deploy. That also means the
@@ -836,7 +916,7 @@ was failing before this change. It now asserts the real registry — the ten shi
 their structural guarantees (unique ids and keys, resolvable targets, publishable instantiation,
 loop-safe traversal, independent copies).
 
-## Project origin
+### Project origin
 
 The repository was empty (`.git` with no commits, empty remote) when this workspace was built, so the
 application shell — layout, sidebar, design tokens, UI primitives — was created as part of the work
