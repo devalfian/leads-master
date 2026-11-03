@@ -164,7 +164,7 @@ authenticates. `npm run dev` is local-only and never reachable from the internet
 
 That is a code change, not configuration: add an `owner_id` column, an auth provider and ownership
 checks in the repository layer. All SQL is centralised in `src/lib/*/repository.ts` on purpose, so
-the change stays contained. The [Access model](./README.md#access-model-important-limitation)
+the change stays contained. The [Access model](./README.md#access-model-the-one-real-limitation)
 section of the README describes the current limits.
 
 ## Offline use in production
