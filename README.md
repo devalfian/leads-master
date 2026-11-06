@@ -298,13 +298,13 @@ npx wrangler d1 execute leads_master --local --command "SELECT (SELECT COUNT(*) 
 
 1. **`/dashboard/settings/guide-data`** — the seed-validation panel should read *all checks pass*. Prices, niches, schedules, objectives, objections and tools are editable here and in the pricing library; nothing is hard-coded in components.
 2. **`/leads/new`** — business name and market are the only required fields.
-3. **`/callbooks/new`** — start from one of the ten templates or from scratch, then **Publish**. A draft can be previewed; only a published snapshot can be called.
+3. **`/callbooks/new`** — start from one of the eleven templates or from scratch, then **Publish**. A draft can be previewed; only a published snapshot can be called.
 4. **Start the call** — from the Callbook (`?lead=…` to attach it) or from the lead page. Call Mode follows the snapshot; the result form records outcome, notes, next action and a follow-up date, which becomes a real follow-up task on that lead.
 5. **`/quotes/new`** — a quotation only offers packages from the lead's own market. Preview it, print it, then move it `draft → sent → accepted / rejected`.
 6. **`/analytics`, `/automation`** — pick a period, run an evaluation, read the reminders in the in-app queue.
 7. **Install it** (optional) — use the install icon in Chrome or Edge. Offline behaviour is only representative in a production build (`npm run cf:preview` or a real deploy); `next dev` is not a faithful service-worker environment.
 
-There are no sample leads, calls, quotations or Callbooks, so the dashboard and analytics start empty by design. The ten starter templates are example material: the Northbay businesses are fictional, and every placeholder, price claim and factual statement in them has to be checked before it is used on a real call.
+There are no sample leads, calls, quotations or Callbooks, so the dashboard and analytics start empty by design. The eleven starter templates are example material: the Northbay businesses are fictional, and every placeholder, price claim and factual statement in them has to be checked before it is used on a real call.
 
 ### The two database modes
 

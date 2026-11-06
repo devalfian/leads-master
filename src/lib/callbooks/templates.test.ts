@@ -20,6 +20,7 @@ describe("starter templates", () => {
       "northbay-tour-travel-outdated-website-refresh",
       "australia-plumber-no-website-custom-demo",
       "australia-plumber-outdated-website-demo-refresh",
+      "digital-leads-plumbing-outdated-website-cold-call",
     ]);
   });
 

@@ -9,6 +9,7 @@ import { northbayTourTravelNoWebsiteOutreach } from "./northbay-tour-travel-no-w
 import { northbayTourTravelOutdatedWebsiteOutreach } from "./northbay-tour-travel-outdated-website";
 import { medSpaCosmeticDentistryOutreach } from "./medspa-cosmetic-dentistry-outreach";
 import { proposalFollowUp } from "./proposal-follow-up";
+import { digitalLeadsPlumbingColdCall } from "./digital-leads-plumbing-cold-call-book";
 
 export type { CallbookTemplate, TemplateNode, TemplateBranch } from "./types";
 export {
@@ -18,7 +19,9 @@ export {
 
 /**
  * Starter templates in picker order. The outreach flows are grouped by business
- * type, each with a "no website" and an "outdated website" variant.
+ * type, each with a "no website" and an "outdated website" variant. The Digital
+ * Leads plumbing book is the full demo-to-close conversation for US plumbing
+ * businesses that already have a website.
  */
 export const CALLBOOK_TEMPLATES: readonly CallbookTemplate[] = [
   proposalFollowUp,
@@ -31,6 +34,7 @@ export const CALLBOOK_TEMPLATES: readonly CallbookTemplate[] = [
   northbayTourTravelOutdatedWebsiteOutreach,
   australiaPlumberNoWebsiteOutreach,
   australiaPlumberOutdatedWebsiteOutreach,
+  digitalLeadsPlumbingColdCall,
 ];
 
 export function findTemplate(templateId: string): CallbookTemplate | null {
