@@ -2778,7 +2778,7 @@ export const digitalLeadsPlumbingColdCall: CallbookTemplate = {
       "type": "message",
       "title": "Revise scope — confirm trade-offs, don't discount blindly",
       "script": "“We can look at that. If we remove [item], that would reduce [deliverable / capability], while keeping [core requirement]. I'll update the scope and price in writing so we're both clear. Are there any other items you'd like treated as optional rather than essential?”",
-      "internalNote": "Requote after confirming impact to outcome, price and timeline. Jangan menawarkan layanan gratis yang tidak sustainable.",
+      "internalNote": "Requote after confirming impact to outcome, price and timeline. Jangan menawarkan layanan gratis yang tidak sustainable. Setiap tambahan revisi dipresentasikan ulang lewat node proposal (bukan mengulang node ini ke dirinya sendiri), supaya perubahan scope dan harga selalu tertulis.",
       "branches": [
         {
           "key": "approve_revision",
@@ -2792,9 +2792,10 @@ export const digitalLeadsPlumbingColdCall: CallbookTemplate = {
           "key": "more_changes",
           "label": "They have more changes",
           "examples": [
-            "Also remove the booking feature."
+            "Also remove the booking feature.",
+            "Send me the updated version with both changes."
           ],
-          "target": "proposal_revision"
+          "target": "proposal_review"
         },
         {
           "key": "full_scope",

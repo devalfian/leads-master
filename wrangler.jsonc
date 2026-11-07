@@ -15,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "leads_master",
-      "database_id": "<paste-your-d1-database-id>",
+      "database_id": "c6b99657-6f39-4330-8cd7-c7fa28fb6398",
       "migrations_dir": "migrations"
     }
   ]
