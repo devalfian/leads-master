@@ -190,7 +190,7 @@ describe("a replayed write inside the calling workflow", () => {
     const callbook = await callbooksRepo.createCallbook({
       title: "Replay callbook",
       primaryGoal: "book_meeting",
-      templateId: "proposal-follow-up",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
       marketId: usa.market.id,
     });
     await callbooksRepo.publishCallbook(callbook.id);

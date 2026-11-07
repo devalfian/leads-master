@@ -351,7 +351,7 @@ describe("unified call history", () => {
     const callbook = await callbooksRepo.createCallbook({
       title: "History callbook",
       primaryGoal: "book_meeting",
-      templateId: "proposal-follow-up",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
       marketId: usa.market.id,
       nicheCategoryId: medSpa.id,
     });
@@ -381,7 +381,7 @@ describe("unified call history", () => {
     const callbook = await callbooksRepo.createCallbook({
       title: "Legacy history callbook",
       primaryGoal: "book_meeting",
-      templateId: "proposal-follow-up",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
     });
     await callbooksRepo.publishCallbook(callbook.id);
     const session = await callbooksRepo.startCallSession(callbook.id, {
@@ -477,7 +477,7 @@ describe("Callbook call handing off to the lead", () => {
     const callbook = await callbooksRepo.createCallbook({
       title,
       primaryGoal: "book_meeting",
-      templateId: "proposal-follow-up",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
       marketId,
     });
     await callbooksRepo.publishCallbook(callbook.id);

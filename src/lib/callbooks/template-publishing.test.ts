@@ -76,9 +76,9 @@ describe("starter templates through the repository", () => {
 
   it("keeps loops visible as a validation warning", async () => {
     const callbook = await createCallbook({
-      title: "Northbay F&B loop check",
+      title: "Digital Leads AU loop check",
       primaryGoal: "book_meeting",
-      templateId: "northbay-fnb-no-website-outreach",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
     });
     await publishCallbook(callbook.id);
 
@@ -91,9 +91,9 @@ describe("starter templates through the repository", () => {
 
   it("follows a documented loop back to an earlier step during a call", async () => {
     const callbook = await createCallbook({
-      title: "Northbay F&B call",
+      title: "Digital Leads AU call",
       primaryGoal: "book_meeting",
-      templateId: "northbay-fnb-no-website-outreach",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
     });
     await publishCallbook(callbook.id);
 
@@ -104,34 +104,41 @@ describe("starter templates through the repository", () => {
       session = await advanceCallSession(session.id, { branchId: branchIdFor(session, labelPart) });
     }
 
-    // Walk the authored route until the demo pitch.
-    await advance("Mereka pemilik");
+    // Walk the authored route from the opening down to the paid-audit offer.
+    await advance("Owner / decision-maker answers");
     expect(findSnapshotNode(session.snapshot, session.currentNodeId)?.title).toContain(
-      "Owner teridentifikasi",
+      "Owner opening",
     );
 
-    await advance("Mau mendengar penjelasan");
-    await advance("Bertanya bagian mana yang perlu diperbarui");
-    await advance("Minta bukti dampak atau hasil");
-    await advance("Memahami batasan hasil");
+    await advance("They give you 30 seconds");
+    expect(findSnapshotNode(session.snapshot, session.currentNodeId)?.title).toContain("Audit hook");
 
-    const pitchId = session.currentNodeId;
-    expect(findSnapshotNode(session.snapshot, pitchId)?.title).toContain("Pitch utama");
+    await advance("They answer the question");
+    await advance("They need website + local search foundation");
+    expect(findSnapshotNode(session.snapshot, session.currentNodeId)?.title).toContain(
+      "Local Visibility Foundation",
+    );
 
-    // Pitch -> discovery -> pitch: this is the loop the template was written with.
-    await advance("Membahas kebutuhan F&B");
-    const discoveryId = session.currentNodeId;
-    expect(findSnapshotNode(session.snapshot, discoveryId)?.title).toContain("Discovery");
+    await advance("They want diagnosis before implementation");
+    const auditId = session.currentNodeId;
+    expect(findSnapshotNode(session.snapshot, auditId)?.title).toContain(
+      "Complete Local SEO Audit",
+    );
 
-    await advance("Fokus dine-in");
-    expect(session.currentNodeId).toBe(pitchId);
-    expect(session.path.at(-1)).toBe(pitchId);
-    expect(session.path.filter((id) => id === pitchId)).toHaveLength(2);
+    // Audit -> free preview -> audit: this is the loop the template was written with.
+    await advance("They prefer to see the free preview first");
+    const previewId = session.currentNodeId;
+    expect(findSnapshotNode(session.snapshot, previewId)?.title).toContain("Free Growth Preview");
+
+    await advance("They need deeper evidence / full report");
+    expect(session.currentNodeId).toBe(auditId);
+    expect(session.path.at(-1)).toBe(auditId);
+    expect(session.path.filter((id) => id === auditId)).toHaveLength(2);
     expect(session.path[0]).toBe(openingId);
 
     // Back still walks the recorded route, loop or not.
     session = await goBackInCallSession(session.id);
-    expect(session.currentNodeId).toBe(discoveryId);
-    expect(session.path.at(-1)).toBe(discoveryId);
+    expect(session.currentNodeId).toBe(previewId);
+    expect(session.path.at(-1)).toBe(previewId);
   });
 });

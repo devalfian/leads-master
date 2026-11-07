@@ -10,17 +10,7 @@ import {
 describe("starter templates", () => {
   it("contains the starter templates in display order", () => {
     expect(CALLBOOK_TEMPLATES.map((template) => template.id)).toEqual([
-      "proposal-follow-up",
-      "medspa-cosmetic-dentistry-demo-outreach",
-      "northbay-fnb-no-website-outreach",
-      "northbay-fnb-outdated-website-refresh",
-      "northbay-motor-car-rental-no-website-outreach",
-      "northbay-motor-car-rental-outdated-website-refresh",
-      "northbay-tour-travel-no-website-outreach",
-      "northbay-tour-travel-outdated-website-refresh",
-      "australia-plumber-no-website-custom-demo",
-      "australia-plumber-outdated-website-demo-refresh",
-      "digital-leads-plumbing-outdated-website-cold-call",
+      "digital-leads-plumbing-au-audit-led-cold-call",
     ]);
   });
 

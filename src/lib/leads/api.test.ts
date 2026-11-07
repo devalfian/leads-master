@@ -219,7 +219,7 @@ describe("callbook session with a lead", () => {
     const callbook = await callbooksRepo.createCallbook({
       title: "API callbook",
       primaryGoal: "book_meeting",
-      templateId: "proposal-follow-up",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
       marketId: usa.market.id,
     });
     await callbooksRepo.publishCallbook(callbook.id);
@@ -239,7 +239,7 @@ describe("callbook session with a lead", () => {
     const idCallbook = await callbooksRepo.createCallbook({
       title: "ID callbook",
       primaryGoal: "book_meeting",
-      templateId: "northbay-fnb-no-website-outreach",
+      templateId: "digital-leads-plumbing-au-audit-led-cold-call",
       marketId: idGuide.market.id,
     });
     await callbooksRepo.publishCallbook(idCallbook.id);

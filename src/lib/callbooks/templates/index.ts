@@ -1,15 +1,5 @@
 import type { CallbookTemplate } from "./types";
-import { australiaPlumberNoWebsiteOutreach } from "./australia-plumber-no-website";
-import { australiaPlumberOutdatedWebsiteOutreach } from "./australia-plumber-outdated-website";
-import { northbayFnbNoWebsiteOutreach } from "./northbay-fnb-no-website";
-import { northbayFnbOutdatedWebsiteOutreach } from "./northbay-fnb-outdated-website";
-import { northbayMotorCarRentalNoWebsiteOutreach } from "./northbay-motor-car-rental-no-website";
-import { northbayMotorCarRentalOutdatedWebsiteOutreach } from "./northbay-motor-car-rental-outdated-website";
-import { northbayTourTravelNoWebsiteOutreach } from "./northbay-tour-travel-no-website";
-import { northbayTourTravelOutdatedWebsiteOutreach } from "./northbay-tour-travel-outdated-website";
-import { medSpaCosmeticDentistryOutreach } from "./medspa-cosmetic-dentistry-outreach";
-import { proposalFollowUp } from "./proposal-follow-up";
-import { digitalLeadsPlumbingColdCall } from "./digital-leads-plumbing-cold-call-book";
+import { digitalLeadsPlumbingColdCallAU } from "./digital-leads-plumbing-cold-call-book-au";
 
 export type { CallbookTemplate, TemplateNode, TemplateBranch } from "./types";
 export {
@@ -18,23 +8,13 @@ export {
 } from "./types";
 
 /**
- * Starter templates in picker order. The outreach flows are grouped by business
- * type, each with a "no website" and an "outdated website" variant. The Digital
- * Leads plumbing book is the full demo-to-close conversation for US plumbing
- * businesses that already have a website.
+ * Starter templates in picker order. The Digital Leads Co Australia plumbing book
+ * is the only starter: an audit-led cold-call conversation built around a public
+ * Google Business Profile + website review, with package routing, objection
+ * handling and Australian telemarketing compliance.
  */
 export const CALLBOOK_TEMPLATES: readonly CallbookTemplate[] = [
-  proposalFollowUp,
-  medSpaCosmeticDentistryOutreach,
-  northbayFnbNoWebsiteOutreach,
-  northbayFnbOutdatedWebsiteOutreach,
-  northbayMotorCarRentalNoWebsiteOutreach,
-  northbayMotorCarRentalOutdatedWebsiteOutreach,
-  northbayTourTravelNoWebsiteOutreach,
-  northbayTourTravelOutdatedWebsiteOutreach,
-  australiaPlumberNoWebsiteOutreach,
-  australiaPlumberOutdatedWebsiteOutreach,
-  digitalLeadsPlumbingColdCall,
+  digitalLeadsPlumbingColdCallAU,
 ];
 
 export function findTemplate(templateId: string): CallbookTemplate | null {
